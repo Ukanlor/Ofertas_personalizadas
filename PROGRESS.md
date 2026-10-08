@@ -3,8 +3,9 @@
 ## Estado actual
 
 - Última capa cerrada: **3 - Steam personal**.
-- Próxima capa: **4 - Recomendador v1**, todavía no iniciada.
-- Estado: importación real, exclusiones y sincronización repetida validadas.
+- Capa activa: **4 - Recomendador v1**.
+- Estado: separación de gusto e interés de compra implementada; calibración y
+  recomendación todavía pendientes.
 - Rama inspeccionada: `main`.
 - Punto de partida: commit inicial `e12c2b6`.
 - Punto de control funcional de capas 0-1: commit local `f5f4c51`.
@@ -27,6 +28,9 @@
   por Steam Families pero nunca abiertos deben quedar fuera.
 - Steam aportará propiedad y actividad; nunca asignará una puntuación ni
   reemplazará una preferencia o decisión manual.
+- El gusto explícito describe cuánto disfrutó el usuario un juego. El interés de
+  compra describe el deseo de adquirir una variante futura; ambos son señales
+  independientes y pueden coexistir.
 
 ## Trabajo realizado en la capa 0
 
@@ -185,8 +189,15 @@ seguridad locales están ignoradas por Git.
   el historial prestado por Steam Families, pero no se reportaron otras ausencias
   que bloquearan esta capa.
 
-## Siguiente tarea propuesta
+## Inicio de la capa 4
 
-Antes de implementar la capa 4 se deben acordar la diferencia práctica entre
-gusto e interés de compra, la fuente de metadatos y cómo formar el catálogo de
-candidatos. No iniciar esa capa sin autorización explícita del usuario.
+- El usuario autorizó la capa y aclaró que la puntuación previa de Hades era un
+  ejemplo guiado: su gusto real es 9/10, no un interés de compra 8/10.
+- Se añadió la migración 006 para gusto explícito de 1 a 10, separado del interés
+  de compra y del estado ignorado.
+- La CLI permite establecer o limpiar gusto e interés por separado. Las tarjetas
+  de Telegram muestran ambos valores; sus botones existentes siguen modificando
+  el interés de compra hasta implementar el flujo específico de calibración.
+- La suite completa suma 49 pruebas correctas.
+- Próximo paso: aplicar la migración 006, registrar Hades con gusto 9/10 y limpiar
+  su interés de compra. Después se construirá la calibración de juegos jugados.

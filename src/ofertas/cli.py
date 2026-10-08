@@ -68,6 +68,20 @@ def build_parser() -> argparse.ArgumentParser:
     interest_set = interest_commands.add_parser("set", help="Guardar una puntuación.")
     interest_set.add_argument("game_id", type=int)
     interest_set.add_argument("score", type=int)
+    interest_clear = interest_commands.add_parser(
+        "clear", help="Dejar el interés de compra sin puntuar."
+    )
+    interest_clear.add_argument("game_id", type=int)
+
+    taste_parser = commands.add_parser("taste", help="Puntuar gusto 1-10.")
+    taste_commands = taste_parser.add_subparsers(
+        dest="taste_command", required=True
+    )
+    taste_set = taste_commands.add_parser("set", help="Guardar gusto explícito.")
+    taste_set.add_argument("game_id", type=int)
+    taste_set.add_argument("score", type=int)
+    taste_clear = taste_commands.add_parser("clear", help="Borrar gusto explícito.")
+    taste_clear.add_argument("game_id", type=int)
 
     ignore_parser = commands.add_parser("ignore", help="Ignorar un juego (interés 0).")
     ignore_parser.add_argument("game_id", type=int)
@@ -194,7 +208,16 @@ def run_command(args: argparse.Namespace, service: CatalogService) -> int:
             print("Juego ignorado: avisos y sugerencias automáticas bloqueados.")
         else:
             service.set_interest(args.game_id, args.score)
-            print(f"Interés actualizado: {args.score}/10")
+            print(f"Interés de compra actualizado: {args.score}/10")
+    elif args.command == "interest" and args.interest_command == "clear":
+        service.set_interest(args.game_id, None)
+        print("Interés de compra eliminado: quedó sin puntuar.")
+    elif args.command == "taste" and args.taste_command == "set":
+        service.set_taste(args.game_id, args.score)
+        print(f"Gusto actualizado: {args.score}/10")
+    elif args.command == "taste" and args.taste_command == "clear":
+        service.clear_taste(args.game_id)
+        print("Puntuación de gusto eliminada.")
     elif args.command == "ignore":
         service.ignore(args.game_id)
         print("Juego ignorado: avisos y sugerencias automáticas bloqueados.")
@@ -359,7 +382,9 @@ def interest_label(score: int | None) -> str:
 
 def print_game(game: Game) -> None:
     print(f"Juego {game.id}: {game.canonical_title}")
-    print(f"Interés: {interest_label(game.interest_score)}")
+    taste = f"{game.taste_score}/10" if game.taste_score is not None else "sin puntuar"
+    print(f"Gusto: {taste}")
+    print(f"Interés de compra: {interest_label(game.interest_score)}")
     if game.aliases:
         print(f"Alias: {', '.join(game.aliases)}")
     if not game.variants:

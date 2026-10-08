@@ -112,7 +112,8 @@ class TelegramPreferenceBotTests(unittest.TestCase):
         self.assertEqual(len(self.api.sent_messages), 1)
         card = self.api.sent_messages[0]
         self.assertIn("Hades", card["text"])
-        self.assertIn("Interés: sin puntuar", card["text"])
+        self.assertIn("Gusto: sin puntuar", card["text"])
+        self.assertIn("Interés de compra: sin puntuar", card["text"])
         callback_data = [
             button["callback_data"]
             for row in card["reply_markup"]["inline_keyboard"]
@@ -159,7 +160,7 @@ class TelegramPreferenceBotTests(unittest.TestCase):
 
         self.assertEqual(self.catalog.get_game(self.game_id).interest_score, 8)
         self.assertEqual(len(self.api.edited_messages), 1)
-        self.assertIn("Interés: 8/10", self.api.edited_messages[0]["text"])
+        self.assertIn("Interés de compra: 8/10", self.api.edited_messages[0]["text"])
         self.assertEqual(self.api.callback_answers[-1]["text"], "Cambio guardado.")
 
     def test_repeated_callback_does_not_repeat_the_edit(self) -> None:

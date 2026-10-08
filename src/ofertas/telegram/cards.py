@@ -16,7 +16,12 @@ class GameCard:
 
 
 def build_game_card(game: Game) -> GameCard:
-    lines = [game.canonical_title, f"Interés: {interest_label(game.interest_score)}"]
+    taste = f"{game.taste_score}/10" if game.taste_score is not None else "sin puntuar"
+    lines = [
+        game.canonical_title,
+        f"Gusto: {taste}",
+        f"Interés de compra: {interest_label(game.interest_score)}",
+    ]
     if game.variants:
         lines.append("Variantes:")
         lines.extend(f"- {variant_line(variant)}" for variant in game.variants)

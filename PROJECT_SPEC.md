@@ -84,6 +84,10 @@ sí solo una oportunidad de la versión física para Switch. Propiedad, interés
 compra y gusto son conceptos distintos; una importación nunca debe borrar una
 decisión manual.
 
+El gusto es una puntuación explícita de 1 a 10 sobre la experiencia con un juego.
+El interés de compra se mantiene separado porque puede referirse a una variante
+todavía no poseída. La actividad de Steam no rellena ninguno de los dos valores.
+
 ## 5. Invariantes
 
 1. Sin puntuar no equivale a ignorado, e ignorado tiene precedencia sobre

@@ -104,6 +104,25 @@ class SqliteGameRepository:
                 (game_id, score, utc_now()),
             )
 
+    def set_taste(self, game_id: int, score: int | None) -> None:
+        self._require_game(game_id)
+        with self.database.transaction() as connection:
+            if score is None:
+                connection.execute(
+                    "DELETE FROM taste_scores WHERE game_id = ?", (game_id,)
+                )
+            else:
+                connection.execute(
+                    """
+                    INSERT INTO taste_scores(game_id, score, updated_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(game_id) DO UPDATE SET
+                        score = excluded.score,
+                        updated_at = excluded.updated_at
+                    """,
+                    (game_id, score, utc_now()),
+                )
+
     def set_owned(self, variant_id: int, owned: bool, source: str = "manual") -> None:
         self._require_variant(variant_id)
         with self.database.transaction() as connection:
@@ -128,8 +147,10 @@ class SqliteGameRepository:
         with self.database.connection() as connection:
             game_row = connection.execute(
                 """
-                SELECT g.id, g.canonical_title, p.interest_score
+                SELECT g.id, g.canonical_title, t.score AS taste_score,
+                       p.interest_score
                 FROM games AS g
+                LEFT JOIN taste_scores AS t ON t.game_id = g.id
                 LEFT JOIN preferences AS p ON p.game_id = g.id
                 WHERE g.id = ?
                 """,
@@ -165,6 +186,7 @@ class SqliteGameRepository:
             return Game(
                 id=game_row["id"],
                 canonical_title=game_row["canonical_title"],
+                taste_score=game_row["taste_score"],
                 interest_score=game_row["interest_score"],
                 aliases=aliases,
                 variants=variants,

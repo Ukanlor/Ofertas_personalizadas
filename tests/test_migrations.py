@@ -29,7 +29,7 @@ class MigrationTests(unittest.TestCase):
                 (now, now),
             )
 
-        self.assertEqual(self.database.migrate(), (2, 3, 4, 5))
+        self.assertEqual(self.database.migrate(), (2, 3, 4, 5, 6))
 
         with self.database.connection() as connection:
             title = connection.execute(
@@ -92,7 +92,7 @@ class MigrationTests(unittest.TestCase):
                 (game_id, now, now),
             ).lastrowid
 
-        self.assertEqual(self.database.migrate(), (4, 5))
+        self.assertEqual(self.database.migrate(), (4, 5, 6))
 
         with self.database.transaction() as connection:
             connection.execute(

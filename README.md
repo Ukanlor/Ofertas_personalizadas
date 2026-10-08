@@ -13,8 +13,9 @@ no forman parte del MVP.
 
 Las **capas 1, 2 y 3** están completas y validadas: el núcleo de datos funciona
 de forma local, el bot de Telegram administra preferencias y la biblioteca
-personal de Steam importa propiedad y actividad. La **capa 4** todavía no ha
-comenzado. No existen consulta de precios ni alertas espontáneas. El estado
+personal de Steam importa propiedad y actividad. La **capa 4: Recomendador v1**
+está en desarrollo y ya separa gusto de interés de compra. No existen consulta
+de precios ni alertas espontáneas. El estado
 verificable y el siguiente trabajo autorizado se mantienen en
 [`PROGRESS.md`](PROGRESS.md).
 
@@ -61,6 +62,9 @@ bloquee scripts `.ps1`; no es necesario cambiar esa política del sistema.
 .\scripts\ofertas.cmd variant add 1 --platform pc --format digital --region cl --drm steam
 .\scripts\ofertas.cmd variant add 1 --platform "Nintendo Switch" --format cartucho --region cl --condition nuevo
 .\scripts\ofertas.cmd interest set 1 8
+.\scripts\ofertas.cmd interest clear 1
+.\scripts\ofertas.cmd taste set 1 9
+.\scripts\ofertas.cmd taste clear 1
 .\scripts\ofertas.cmd ignore 1
 .\scripts\ofertas.cmd reactivate 1
 .\scripts\ofertas.cmd owned set 1
@@ -69,7 +73,8 @@ bloquee scripts `.ps1`; no es necesario cambiar esa política del sistema.
 ```
 
 El identificador de cada juego o variante aparece al crearlo. `interest set 0`
-equivale a ignorar; `reactivate` vuelve a dejar el juego sin puntuar.
+equivale a ignorar; `reactivate` o `interest clear` dejan el interés de compra
+sin puntuar. `taste` registra cuánto gustó un juego y no se deduce de sus horas.
 
 ## Pruebas
 

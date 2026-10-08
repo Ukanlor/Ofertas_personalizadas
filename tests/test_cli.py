@@ -70,7 +70,8 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertEqual(error, "")
-        self.assertIn("Interés: interés 8/10", output)
+        self.assertIn("Gusto: sin puntuar", output)
+        self.assertIn("Interés de compra: interés 8/10", output)
         self.assertIn("pc / base / digital / cl / steam - poseída (manual)", output)
         self.assertIn("nintendo-switch / base / cartucho / cl / nuevo - no poseída", output)
 
@@ -91,6 +92,25 @@ class CliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(error, "")
         self.assertIn("Juego ignorado", output)
+
+    def test_taste_and_purchase_interest_can_be_changed_separately(self) -> None:
+        self.run_cli("game", "add", "Hades")
+        self.run_cli("interest", "set", "1", "8")
+
+        taste_code, taste_output, taste_error = self.run_cli(
+            "taste", "set", "1", "9"
+        )
+        clear_code, clear_output, clear_error = self.run_cli(
+            "interest", "clear", "1"
+        )
+        show_code, show_output, show_error = self.run_cli("game", "show", "1")
+
+        self.assertEqual((taste_code, clear_code, show_code), (0, 0, 0))
+        self.assertEqual(taste_error + clear_error + show_error, "")
+        self.assertIn("Gusto actualizado: 9/10", taste_output)
+        self.assertIn("Interés de compra eliminado", clear_output)
+        self.assertIn("Gusto: 9/10", show_output)
+        self.assertIn("Interés de compra: sin puntuar", show_output)
 
     @patch("ofertas.cli.HttpSteamApi")
     @patch("ofertas.cli.SteamConfig.from_environment")

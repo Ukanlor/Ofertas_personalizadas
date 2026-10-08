@@ -35,6 +35,7 @@ class Variant:
 class Game:
     id: int
     canonical_title: str
+    taste_score: int | None
     interest_score: int | None
     aliases: tuple[str, ...] = ()
     variants: tuple[Variant, ...] = ()
@@ -70,4 +71,12 @@ def validate_interest(score: int | None) -> int | None:
         raise DomainError("El interés debe ser un número entero entre 0 y 10.")
     if not 0 <= score <= 10:
         raise DomainError("El interés debe estar entre 0 y 10.")
+    return score
+
+
+def validate_taste(score: int) -> int:
+    if isinstance(score, bool) or not isinstance(score, int):
+        raise DomainError("El gusto debe ser un número entero entre 1 y 10.")
+    if not 1 <= score <= 10:
+        raise DomainError("El gusto debe estar entre 1 y 10.")
     return score

@@ -1,0 +1,5 @@
+CREATE TABLE taste_scores (
+    game_id INTEGER PRIMARY KEY REFERENCES games(id) ON DELETE CASCADE,
+    score INTEGER NOT NULL CHECK (score BETWEEN 1 AND 10),
+    updated_at TEXT NOT NULL
+);

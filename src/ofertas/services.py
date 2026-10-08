@@ -7,6 +7,7 @@ from ofertas.domain import (
     normalize_code,
     normalize_text,
     validate_interest,
+    validate_taste,
 )
 from ofertas.persistence.repositories import SqliteGameRepository
 
@@ -52,6 +53,12 @@ class CatalogService:
 
     def reactivate(self, game_id: int) -> None:
         self.set_interest(game_id, None)
+
+    def set_taste(self, game_id: int, score: int) -> None:
+        self.repository.set_taste(game_id, validate_taste(score))
+
+    def clear_taste(self, game_id: int) -> None:
+        self.repository.set_taste(game_id, None)
 
     def set_owned(self, variant_id: int, owned: bool, source: str = "manual") -> None:
         normalized_source = normalize_code(source, "La fuente", allow_empty=False)
