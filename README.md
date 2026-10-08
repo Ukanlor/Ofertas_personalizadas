@@ -11,10 +11,11 @@ no forman parte del MVP.
 
 ## Estado actual
 
-La **capa 1: núcleo de datos** está completa y validada. La siguiente etapa
-planificada es Telegram de preferencias, pero todavía no se ha iniciado. No
-existen bot, importación de Steam ni consulta de precios. El estado verificable y
-el siguiente trabajo autorizado se mantienen en [`PROGRESS.md`](PROGRESS.md).
+La **capa 1: núcleo de datos** está completa y validada. La **capa 2: Telegram
+de preferencias** tiene su implementación offline terminada; falta conectarla y
+validarla con el bot real del usuario. No existen importación de Steam, consulta
+de precios ni alertas espontáneas. El estado verificable y el siguiente trabajo
+autorizado se mantienen en [`PROGRESS.md`](PROGRESS.md).
 
 ## Entornos previstos
 
@@ -75,3 +76,36 @@ equivale a ignorar; `reactivate` vuelve a dejar el juego sin puntuar.
 $env:PYTHONPATH = "$PWD\src"
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
+
+## Telegram: configuración local
+
+El adaptador usa la [Bot API oficial de Telegram](https://core.telegram.org/bots/api)
+mediante long polling. Solo acepta mensajes privados del ID numérico configurado.
+El token no se guarda en Git, SQLite ni archivos del proyecto.
+
+1. Crea el bot mediante [`@BotFather`](https://t.me/BotFather) y abre su chat.
+2. En PowerShell, carga el token sin escribirlo en el historial:
+
+```powershell
+$tokenSeguro = Read-Host "Token de Telegram" -AsSecureString
+$env:TELEGRAM_BOT_TOKEN = [System.Net.NetworkCredential]::new("", $tokenSeguro).Password
+Remove-Variable tokenSeguro
+.\scripts\ofertas.cmd bot check
+```
+
+3. Envía `/start` al bot desde Telegram y ejecuta:
+
+```powershell
+.\scripts\ofertas.cmd bot identify
+```
+
+4. Copia únicamente tu ID numérico mostrado y configura el acceso:
+
+```powershell
+$env:TELEGRAM_ALLOWED_USER_ID = "TU_ID_NUMERICO"
+.\scripts\ofertas.cmd bot run
+```
+
+El proceso funciona hasta presionar `Ctrl+C`. Actualmente reconoce `/start`,
+`/help` y `/search texto`; las tarjetas permiten puntuar, ignorar, reactivar y
+marcar o desmarcar propiedad por variante.

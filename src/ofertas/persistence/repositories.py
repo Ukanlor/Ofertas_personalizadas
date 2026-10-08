@@ -170,6 +170,25 @@ class SqliteGameRepository:
                 variants=variants,
             )
 
+    def get_variant(self, variant_id: int) -> Variant:
+        with self.database.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    v.id, v.game_id, v.platform, v.edition, v.format,
+                    v.region, v.drm, v.condition,
+                    o.variant_id IS NOT NULL AS owned,
+                    o.source AS ownership_source
+                FROM variants AS v
+                LEFT JOIN ownership AS o ON o.variant_id = v.id
+                WHERE v.id = ?
+                """,
+                (variant_id,),
+            ).fetchone()
+        if row is None:
+            raise NotFoundError(f"No existe la variante {variant_id}.")
+        return self._variant_from_row(row)
+
     def search_games(self, normalized_query: str) -> tuple[Game, ...]:
         escaped = normalized_query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         pattern = f"%{escaped}%"

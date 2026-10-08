@@ -8,7 +8,11 @@ from collections.abc import Sequence
 from ofertas.domain import DomainError, Game
 from ofertas.persistence.database import Database
 from ofertas.persistence.repositories import SqliteGameRepository
+from ofertas.persistence.telegram_state import TelegramStateRepository
 from ofertas.services import CatalogService
+from ofertas.telegram.api import HttpTelegramApi, TelegramApiError
+from ofertas.telegram.bot import TelegramPollingRunner, TelegramPreferenceBot
+from ofertas.telegram.config import TelegramConfig, token_from_environment
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -79,6 +83,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     owned_unset.add_argument("variant_id", type=int)
 
+    bot_parser = commands.add_parser("bot", help="Administrar el bot de Telegram.")
+    bot_commands = bot_parser.add_subparsers(dest="bot_command", required=True)
+    bot_commands.add_parser("check", help="Validar el token y mostrar el bot.")
+    bot_commands.add_parser(
+        "identify",
+        help="Mostrar IDs de usuarios con updates pendientes para configurar acceso.",
+    )
+    bot_commands.add_parser("run", help="Iniciar long polling hasta presionar Ctrl+C.")
+
     return parser
 
 
@@ -98,10 +111,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
 
         service = CatalogService(SqliteGameRepository(database))
+        if args.command == "bot":
+            return run_bot_command(args, database, service)
         return run_command(args, service)
     except DomainError as error:
         print(f"Error: {error}", file=sys.stderr)
         return 2
+    except TelegramApiError as error:
+        print(f"Error de Telegram: {error}", file=sys.stderr)
+        return 3
 
 
 def run_command(args: argparse.Namespace, service: CatalogService) -> int:
@@ -152,6 +170,67 @@ def run_command(args: argparse.Namespace, service: CatalogService) -> int:
     else:
         raise AssertionError("Comando no implementado.")
     return 0
+
+
+def run_bot_command(
+    args: argparse.Namespace, database: Database, service: CatalogService
+) -> int:
+    if args.bot_command == "check":
+        api = HttpTelegramApi(token_from_environment())
+        bot_user = api.get_me()
+        username = bot_user.get("username", "sin_username")
+        print(f"Token válido. Bot: @{username}")
+        return 0
+
+    if args.bot_command == "identify":
+        api = HttpTelegramApi(token_from_environment())
+        updates = api.get_updates(offset=None, timeout=10)
+        identities = identities_from_updates(updates)
+        if not identities:
+            print("No hay usuarios en los updates pendientes. Envía /start al bot y repite.")
+            return 0
+        print("Usuarios encontrados en updates pendientes:")
+        for user_id, username in identities:
+            suffix = f" (@{username})" if username else ""
+            print(f"  {user_id}{suffix}")
+        print("Configura TELEGRAM_ALLOWED_USER_ID con tu identificador.")
+        return 0
+
+    if args.bot_command == "run":
+        config = TelegramConfig.from_environment()
+        api = HttpTelegramApi(config.token)
+        state = TelegramStateRepository(database)
+        bot = TelegramPreferenceBot(
+            api=api,
+            catalog=service,
+            state=state,
+            authorized_user_id=config.authorized_user_id,
+        )
+        runner = TelegramPollingRunner(api=api, bot=bot, state=state)
+        try:
+            runner.run_forever()
+        except KeyboardInterrupt:
+            print("Bot detenido por el usuario.")
+        return 0
+
+    raise AssertionError("Comando de bot no implementado.")
+
+
+def identities_from_updates(updates: list[dict[str, object]]) -> list[tuple[int, str]]:
+    identities: dict[int, str] = {}
+    for update in updates:
+        source = update.get("message") or update.get("callback_query")
+        if not isinstance(source, dict):
+            continue
+        sender = source.get("from")
+        if not isinstance(sender, dict):
+            continue
+        user_id = sender.get("id")
+        if not isinstance(user_id, int) or user_id <= 0:
+            continue
+        username = sender.get("username")
+        identities[user_id] = username if isinstance(username, str) else ""
+    return sorted(identities.items())
 
 
 def interest_label(score: int | None) -> str:

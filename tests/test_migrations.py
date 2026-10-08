@@ -29,7 +29,7 @@ class MigrationTests(unittest.TestCase):
                 (now, now),
             )
 
-        self.assertEqual(self.database.migrate(), (2,))
+        self.assertEqual(self.database.migrate(), (2, 3))
 
         with self.database.connection() as connection:
             title = connection.execute(

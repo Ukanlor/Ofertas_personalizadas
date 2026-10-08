@@ -112,6 +112,12 @@ El dominio y los servicios no dependerán de Telegram, HTML de tiendas ni una AP
 concreta. Los adaptadores obtienen o presentan datos, pero no deciden las reglas
 centrales.
 
+Para la capa 2, Telegram usa la Bot API oficial por HTTPS y long polling. El bot
+solo procesa mensajes privados del ID numérico autorizado. El token se recibe
+mediante variable de entorno y nunca se persiste. Los offsets y callbacks ya
+procesados sí se guardan en SQLite para soportar reinicios y evitar cambios
+duplicados. Webhooks y servidores públicos quedan fuera de esta capa.
+
 ## 7. Capas de desarrollo
 
 0. **Especificación:** documentación, decisiones, límites y estado verificable.
