@@ -11,12 +11,11 @@ no forman parte del MVP.
 
 ## Estado actual
 
-Las **capas 1 y 2** están completas y validadas: el núcleo de datos funciona de
-forma local y el bot de Telegram permite consultar y modificar las preferencias
-del usuario autorizado. La **capa 3: Steam personal** está en desarrollo; su
-esquema local ya está preparado, pero todavía no se conecta con una cuenta real.
-No existen consulta de precios ni alertas espontáneas. El estado verificable y
-el siguiente trabajo autorizado se mantienen en
+Las **capas 1, 2 y 3** están completas y validadas: el núcleo de datos funciona
+de forma local, el bot de Telegram administra preferencias y la biblioteca
+personal de Steam importa propiedad y actividad. La **capa 4** todavía no ha
+comenzado. No existen consulta de precios ni alertas espontáneas. El estado
+verificable y el siguiente trabajo autorizado se mantienen en
 [`PROGRESS.md`](PROGRESS.md).
 
 ## Entornos previstos

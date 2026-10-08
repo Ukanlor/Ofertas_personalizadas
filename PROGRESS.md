@@ -2,14 +2,14 @@
 
 ## Estado actual
 
-- Última capa cerrada: **2 - Telegram de preferencias**.
-- Capa activa: **3 - Steam personal**.
-- Estado: alcance inicial definido y migración local implementada; todavía no
-  hay conexión con la cuenta de Steam.
+- Última capa cerrada: **3 - Steam personal**.
+- Próxima capa: **4 - Recomendador v1**, todavía no iniciada.
+- Estado: importación real, exclusiones y sincronización repetida validadas.
 - Rama inspeccionada: `main`.
 - Punto de partida: commit inicial `e12c2b6`.
 - Punto de control funcional de capas 0-1: commit local `f5f4c51`.
-- Código de producto: núcleo local, CLI y bot de Telegram disponibles.
+- Código de producto: núcleo local, CLI, bot de Telegram e importador personal
+  de Steam disponibles.
 
 ## Decisiones registradas
 
@@ -123,12 +123,12 @@
 
 ## Límites actuales
 
-No se han creado dependencias de Python externas, importaciones de Steam, fuentes
-de precios, tareas programadas ni otras integraciones. El bot de Telegram ya
-existe y fue validado, pero su token y el ID autorizado no se guardan en Git ni
-en la base de datos. Las bases locales están ignoradas por Git.
+No se han creado dependencias de Python externas, fuentes de precios, tareas
+programadas ni integraciones distintas de Telegram y Steam. Las claves y los ID
+de acceso no se guardan en Git. Las bases, exclusiones personales y copias de
+seguridad locales están ignoradas por Git.
 
-## Inicio de la capa 3
+## Trabajo realizado en la capa 3
 
 - Se confirmó el filtro principal con el usuario: `playtime_forever > 0`.
 - El usuario dejó públicos los detalles de juegos y visible el tiempo total en
@@ -169,5 +169,24 @@ en la base de datos. Las bases locales están ignoradas por Git.
 - Se estableció que el tiempo de Steam es actividad, no una medición de gusto;
   horas ausentes por haber jugado en otra consola no producen una señal negativa.
 - La suite completa suma 47 pruebas correctas.
-- Próximo paso: aplicar la migración 005, registrar las seis reglas localmente y
-  comprobar que la vista previa baja de 99 a 93 títulos importables.
+- El usuario aplicó la migración 005 y confirmó seis reglas persistentes: 99
+  títulos jugados quedaron en 93 importables, además de 23 nunca ejecutados.
+
+### Verificación de capa 3
+
+- Antes de la escritura real se creó una copia local recuperable de la base.
+- La primera importación real recibió 122 entradas, importó 93, excluyó 6, omitió
+  23 sin uso y creó 92 juegos nuevos.
+- Hades se reutilizó sin duplicarse y conservó interés 8/10, propiedad manual en
+  Steam y la variante de Switch no poseída.
+- Una segunda sincronización creó cero juegos nuevos y volvió a respetar las seis
+  exclusiones. Las búsquedas de dos aplicaciones excluidas no dieron resultados.
+- La lista real fue revisada por el usuario. La API no garantiza recuperar todo
+  el historial prestado por Steam Families, pero no se reportaron otras ausencias
+  que bloquearan esta capa.
+
+## Siguiente tarea propuesta
+
+Antes de implementar la capa 4 se deben acordar la diferencia práctica entre
+gusto e interés de compra, la fuente de metadatos y cómo formar el catálogo de
+candidatos. No iniciar esa capa sin autorización explícita del usuario.
