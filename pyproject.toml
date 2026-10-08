@@ -1,0 +1,10 @@
+[project]
+name = "ofertas-personalizadas"
+version = "0.1.0"
+description = "Núcleo local para ofertas personalizadas de videojuegos"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[project.scripts]
+ofertas = "ofertas.cli:main"

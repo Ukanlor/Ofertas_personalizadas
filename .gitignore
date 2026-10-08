@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Datos y configuración locales
+data/
+*.db
+*.db-shm
+*.db-wal
+.env
+
+# Pruebas y herramientas
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.test-tmp/
+
+# Editores y sistema operativo
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
