@@ -137,7 +137,13 @@ Primero comprueba la conexión sin modificar el catálogo:
 .\scripts\ofertas.cmd steam check
 ```
 
-Después de revisar las cantidades, la importación explícita se ejecuta con:
+Para revisar los títulos y sus horas sin escribir en la base:
+
+```powershell
+.\scripts\ofertas.cmd steam preview
+```
+
+Después de revisar la vista previa, la importación explícita se ejecuta con:
 
 ```powershell
 .\scripts\ofertas.cmd steam import

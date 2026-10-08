@@ -140,6 +140,33 @@ class CliTests(unittest.TestCase):
             ).fetchall()
         self.assertEqual([row["canonical_title"] for row in games], ["Jugado"])
 
+    @patch("ofertas.cli.HttpSteamApi")
+    @patch("ofertas.cli.SteamConfig.from_environment")
+    def test_steam_preview_lists_only_played_games_without_writing(
+        self, mocked_config: object, mocked_api_class: object
+    ) -> None:
+        mocked_config.return_value = SteamConfig(  # type: ignore[attr-defined]
+            api_key="fictitious-key", steam_id="76561198000000000"
+        )
+        mocked_api_class.return_value.get_owned_games.return_value = [  # type: ignore[attr-defined]
+            SteamOwnedApp(10, "Zeta", 90),
+            SteamOwnedApp(11, "Sin abrir", 0),
+            SteamOwnedApp(12, "Alpha", 30),
+        ]
+
+        exit_code, output, error = self.run_cli("steam", "preview")
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(error, "")
+        self.assertIn("Juegos que se importarían: 2", output)
+        self.assertIn("12: Alpha - 0.5 h", output)
+        self.assertIn("10: Zeta - 1.5 h", output)
+        self.assertNotIn("Sin abrir", output)
+        self.assertLess(output.index("Alpha"), output.index("Zeta"))
+        with Database(self.db_path).connection() as connection:
+            count = connection.execute("SELECT count(*) FROM games").fetchone()[0]
+        self.assertEqual(count, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

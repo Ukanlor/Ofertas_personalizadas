@@ -104,6 +104,9 @@ def build_parser() -> argparse.ArgumentParser:
         "check", help="Comprobar acceso y mostrar cantidades sin importar."
     )
     steam_commands.add_parser(
+        "preview", help="Listar juegos que se importarían sin modificar la base."
+    )
+    steam_commands.add_parser(
         "import", help="Importar juegos ejecutados y su actividad."
     )
 
@@ -249,6 +252,17 @@ def run_steam_command(args: argparse.Namespace, database: Database) -> int:
             f"Biblioteca recibida: {len(apps)}; "
             f"jugados alguna vez: {played}; omitidos sin uso: {unplayed}."
         )
+        return 0
+
+    if args.steam_command == "preview":
+        print(f"Juegos que se importarían: {played}")
+        for app in sorted(
+            (app for app in apps if app.playtime_forever_minutes > 0),
+            key=lambda app: app.name.casefold(),
+        ):
+            hours = app.playtime_forever_minutes / 60
+            print(f"  {app.app_id}: {app.name} - {hours:.1f} h")
+        print(f"Omitidos por no haberse ejecutado: {unplayed}")
         return 0
 
     if args.steam_command == "import":

@@ -158,6 +158,10 @@ en la base de datos. Las bases locales están ignoradas por Git.
   ejecuta la escritura explícita después de revisar la conexión.
 - `STEAM_WEB_API_KEY` y `STEAM_USER_ID` se leen únicamente desde el entorno. El
   archivo de ejemplo contiene valores ficticios.
-- La suite completa suma 44 pruebas correctas.
-- Próximo paso: obtener una clave Web API y el SteamID, cargarlos localmente y
-  ejecutar `steam check`. No compartir ninguno de esos valores en el chat.
+- La prueba real de `steam check` fue correcta: la API devolvió 122 entradas,
+  de las cuales 99 tienen actividad y 23 se omitirán por no haberse ejecutado.
+- Se añadió `steam preview` para listar título, AppID y horas de los elementos
+  jugados sin escribir en el catálogo.
+- La suite completa suma 45 pruebas correctas.
+- Próximo paso: revisar los 99 títulos de la vista previa y confirmar si existen
+  aplicaciones no deseadas o ausencias conocidas de Steam Families.
