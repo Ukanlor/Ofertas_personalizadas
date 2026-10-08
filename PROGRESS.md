@@ -162,6 +162,12 @@ en la base de datos. Las bases locales están ignoradas por Git.
   de las cuales 99 tienen actividad y 23 se omitirán por no haberse ejecutado.
 - Se añadió `steam preview` para listar título, AppID y horas de los elementos
   jugados sin escribir en el catálogo.
-- La suite completa suma 45 pruebas correctas.
-- Próximo paso: revisar los 99 títulos de la vista previa y confirmar si existen
-  aplicaciones no deseadas o ausencias conocidas de Steam Families.
+- El usuario identificó seis aplicaciones que no deben formar parte del catálogo.
+  Los nombres y motivos se guardarán solo en su base local, no en Git.
+- Se añadió la migración 005 y comandos para añadir, listar y retirar exclusiones
+  persistentes por AppID. `check`, `preview` e `import` respetan las reglas.
+- Se estableció que el tiempo de Steam es actividad, no una medición de gusto;
+  horas ausentes por haber jugado en otra consola no producen una señal negativa.
+- La suite completa suma 47 pruebas correctas.
+- Próximo paso: aplicar la migración 005, registrar las seis reglas localmente y
+  comprobar que la vista previa baja de 99 a 93 títulos importables.

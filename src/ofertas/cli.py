@@ -106,6 +106,23 @@ def build_parser() -> argparse.ArgumentParser:
     steam_commands.add_parser(
         "preview", help="Listar juegos que se importarían sin modificar la base."
     )
+    steam_exclude = steam_commands.add_parser(
+        "exclude", help="Administrar exclusiones locales por AppID."
+    )
+    steam_exclude_commands = steam_exclude.add_subparsers(
+        dest="steam_exclude_command", required=True
+    )
+    steam_exclude_add = steam_exclude_commands.add_parser(
+        "add", help="Excluir una aplicación de futuras importaciones."
+    )
+    steam_exclude_add.add_argument("app_id", type=int)
+    steam_exclude_add.add_argument("name")
+    steam_exclude_add.add_argument("--reason", default="")
+    steam_exclude_remove = steam_exclude_commands.add_parser(
+        "remove", help="Eliminar una exclusión."
+    )
+    steam_exclude_remove.add_argument("app_id", type=int)
+    steam_exclude_commands.add_parser("list", help="Mostrar exclusiones locales.")
     steam_commands.add_parser(
         "import", help="Importar juegos ejecutados y su actividad."
     )
@@ -240,37 +257,73 @@ def run_bot_command(
 
 
 def run_steam_command(args: argparse.Namespace, database: Database) -> int:
+    repository = SqliteSteamRepository(database)
+    importer = SteamLibraryImporter(repository)
+    if args.steam_command == "exclude":
+        if args.steam_exclude_command == "add":
+            importer.exclude_app(args.app_id, args.name, args.reason)
+            print(f"Exclusión guardada para AppID {args.app_id}.")
+            return 0
+        if args.steam_exclude_command == "remove":
+            removed = importer.include_app(args.app_id)
+            print("Exclusión eliminada." if removed else "El AppID no estaba excluido.")
+            return 0
+        if args.steam_exclude_command == "list":
+            exclusions = importer.list_exclusions()
+            if not exclusions:
+                print("No hay exclusiones de Steam.")
+                return 0
+            print("Exclusiones de Steam:")
+            for exclusion in exclusions:
+                suffix = f" - {exclusion.reason}" if exclusion.reason else ""
+                print(f"  {exclusion.app_id}: {exclusion.name}{suffix}")
+            return 0
+        raise AssertionError("Subcomando de exclusión no implementado.")
+
     config = SteamConfig.from_environment()
     api = HttpSteamApi(config.api_key)
     apps = api.get_owned_games(config.steam_id)
     played = sum(app.playtime_forever_minutes > 0 for app in apps)
     unplayed = len(apps) - played
+    excluded_ids = repository.excluded_app_ids()
+    excluded = sum(
+        app.playtime_forever_minutes > 0 and app.app_id in excluded_ids
+        for app in apps
+    )
+    importable = played - excluded
 
     if args.steam_command == "check":
         print(
             "Acceso válido. "
             f"Biblioteca recibida: {len(apps)}; "
-            f"jugados alguna vez: {played}; omitidos sin uso: {unplayed}."
+            f"jugados alguna vez: {played}; excluidos: {excluded}; "
+            f"importables: {importable}; omitidos sin uso: {unplayed}."
         )
         return 0
 
     if args.steam_command == "preview":
-        print(f"Juegos que se importarían: {played}")
+        print(f"Juegos que se importarían: {importable}")
         for app in sorted(
-            (app for app in apps if app.playtime_forever_minutes > 0),
+            (
+                app
+                for app in apps
+                if app.playtime_forever_minutes > 0
+                and app.app_id not in excluded_ids
+            ),
             key=lambda app: app.name.casefold(),
         ):
             hours = app.playtime_forever_minutes / 60
             print(f"  {app.app_id}: {app.name} - {hours:.1f} h")
+        print(f"Excluidos por regla local: {excluded}")
         print(f"Omitidos por no haberse ejecutado: {unplayed}")
         return 0
 
     if args.steam_command == "import":
-        importer = SteamLibraryImporter(SqliteSteamRepository(database))
         result = importer.import_library(config.steam_id, apps)
         print(
             "Importación completada. "
             f"Recibidos: {result.received}; importados: {result.imported}; "
+            f"excluidos: {result.skipped_excluded}; "
             f"omitidos sin uso: {result.skipped_unplayed}; "
             f"juegos nuevos: {result.created_games}."
         )

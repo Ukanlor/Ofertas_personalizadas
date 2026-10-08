@@ -17,6 +17,13 @@ class SteamAppRecord:
     last_played_at: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class SteamImportExclusion:
+    app_id: int
+    name: str
+    reason: str
+
+
 class SqliteSteamRepository:
     def __init__(self, database: Database) -> None:
         self.database = database
@@ -79,6 +86,50 @@ class SqliteSteamRepository:
                     )
                 self._ensure_owned(connection, variant_id, now)
         return created_games
+
+    def set_exclusion(self, app_id: int, name: str, reason: str) -> None:
+        now = utc_now()
+        with self.database.transaction() as connection:
+            connection.execute(
+                """
+                INSERT INTO steam_import_exclusions(
+                    app_id, name, reason, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(app_id) DO UPDATE SET
+                    name = excluded.name,
+                    reason = excluded.reason,
+                    updated_at = excluded.updated_at
+                """,
+                (app_id, name, reason, now, now),
+            )
+
+    def remove_exclusion(self, app_id: int) -> bool:
+        with self.database.transaction() as connection:
+            cursor = connection.execute(
+                "DELETE FROM steam_import_exclusions WHERE app_id = ?", (app_id,)
+            )
+        return cursor.rowcount > 0
+
+    def list_exclusions(self) -> tuple[SteamImportExclusion, ...]:
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                """
+                SELECT app_id, name, reason
+                FROM steam_import_exclusions
+                ORDER BY name COLLATE NOCASE, app_id
+                """
+            ).fetchall()
+        return tuple(
+            SteamImportExclusion(
+                app_id=int(row["app_id"]),
+                name=str(row["name"]),
+                reason=str(row["reason"]),
+            )
+            for row in rows
+        )
+
+    def excluded_app_ids(self) -> set[int]:
+        return {exclusion.app_id for exclusion in self.list_exclusions()}
 
     @staticmethod
     def _bind_profile(

@@ -5,7 +5,11 @@ from datetime import datetime, timezone
 from collections.abc import Iterable
 
 from ofertas.domain import DomainError, clean_display_text, normalize_text
-from ofertas.persistence.steam import SqliteSteamRepository, SteamAppRecord
+from ofertas.persistence.steam import (
+    SqliteSteamRepository,
+    SteamAppRecord,
+    SteamImportExclusion,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +26,7 @@ class SteamImportResult:
     received: int
     imported: int
     skipped_unplayed: int
+    skipped_excluded: int
     created_games: int
 
 
@@ -37,6 +42,8 @@ class SteamLibraryImporter:
         seen_app_ids: set[int] = set()
         records: list[SteamAppRecord] = []
         skipped_unplayed = 0
+        skipped_excluded = 0
+        excluded_app_ids = self.repository.excluded_app_ids()
 
         for app in received:
             record = validate_app(app)
@@ -46,6 +53,9 @@ class SteamLibraryImporter:
             if record.playtime_forever_minutes == 0:
                 skipped_unplayed += 1
                 continue
+            if record.app_id in excluded_app_ids:
+                skipped_excluded += 1
+                continue
             records.append(record)
 
         created_games = self.repository.import_apps(normalized_steam_id, records)
@@ -53,8 +63,23 @@ class SteamLibraryImporter:
             received=len(received),
             imported=len(records),
             skipped_unplayed=skipped_unplayed,
+            skipped_excluded=skipped_excluded,
             created_games=created_games,
         )
+
+    def exclude_app(self, app_id: int, name: str, reason: str = "") -> None:
+        valid_app_id = positive_integer(app_id, "El AppID")
+        display_name = clean_display_text(name, "El nombre")
+        clean_reason = " ".join(reason.split()) if isinstance(reason, str) else None
+        if clean_reason is None:
+            raise DomainError("El motivo debe ser texto.")
+        self.repository.set_exclusion(valid_app_id, display_name, clean_reason)
+
+    def include_app(self, app_id: int) -> bool:
+        return self.repository.remove_exclusion(positive_integer(app_id, "El AppID"))
+
+    def list_exclusions(self) -> tuple[SteamImportExclusion, ...]:
+        return self.repository.list_exclusions()
 
 
 def validate_steam_id(value: str) -> str:

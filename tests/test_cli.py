@@ -167,6 +167,34 @@ class CliTests(unittest.TestCase):
             count = connection.execute("SELECT count(*) FROM games").fetchone()[0]
         self.assertEqual(count, 0)
 
+    def test_steam_exclusions_do_not_require_credentials(self) -> None:
+        exit_code, output, error = self.run_cli(
+            "steam",
+            "exclude",
+            "add",
+            "50",
+            "Herramienta",
+            "--reason",
+            "No es un juego",
+        )
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(error, "")
+        self.assertIn("AppID 50", output)
+        list_code, list_output, list_error = self.run_cli(
+            "steam", "exclude", "list"
+        )
+        self.assertEqual(list_code, 0)
+        self.assertEqual(list_error, "")
+        self.assertIn("50: Herramienta - No es un juego", list_output)
+
+        remove_code, remove_output, remove_error = self.run_cli(
+            "steam", "exclude", "remove", "50"
+        )
+        self.assertEqual(remove_code, 0)
+        self.assertEqual(remove_error, "")
+        self.assertIn("Exclusión eliminada", remove_output)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -97,6 +97,10 @@ decisión manual.
    cero, falso o agotado.
 7. Una capa solo se cierra cuando su resultado, pruebas y validación pendiente o
    realizada quedan registrados.
+8. Tiempo alto, bajo o ausente en Steam no equivale a gusto, desagrado ni falta
+   de experiencia: el usuario puede haber jugado en otra plataforma.
+9. Las exclusiones de importación son reglas locales reversibles y no generan
+   automáticamente una valoración negativa.
 
 ## 6. Arquitectura prevista
 

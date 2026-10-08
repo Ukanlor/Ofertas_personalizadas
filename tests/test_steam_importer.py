@@ -122,6 +122,30 @@ class SteamLibraryImporterTests(unittest.TestCase):
                 ],
             )
 
+    def test_local_exclusion_is_persistent_and_enforced(self) -> None:
+        self.importer.exclude_app(50, "Herramienta", "No es un juego")
+
+        result = self.importer.import_library(
+            "76561198000000000",
+            [
+                SteamOwnedApp(50, "Herramienta", 600),
+                SteamOwnedApp(51, "Juego", 60),
+            ],
+        )
+
+        self.assertEqual(result.imported, 1)
+        self.assertEqual(result.skipped_excluded, 1)
+        self.assertEqual(self.catalog.search_games("Herramienta"), ())
+        self.assertEqual(len(self.catalog.search_games("Juego")), 1)
+        exclusions = self.importer.list_exclusions()
+        self.assertEqual(len(exclusions), 1)
+        self.assertEqual(exclusions[0].app_id, 50)
+        self.assertEqual(exclusions[0].reason, "No es un juego")
+
+        self.assertTrue(self.importer.include_app(50))
+        self.assertFalse(self.importer.include_app(50))
+        self.assertEqual(self.importer.list_exclusions(), ())
+
 
 if __name__ == "__main__":
     unittest.main()

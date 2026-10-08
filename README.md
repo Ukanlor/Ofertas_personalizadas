@@ -143,6 +143,14 @@ Para revisar los títulos y sus horas sin escribir en la base:
 .\scripts\ofertas.cmd steam preview
 ```
 
+Las exclusiones personales se guardan solamente en la base local:
+
+```powershell
+.\scripts\ofertas.cmd steam exclude add APP_ID "Nombre" --reason "Motivo"
+.\scripts\ofertas.cmd steam exclude list
+.\scripts\ofertas.cmd steam exclude remove APP_ID
+```
+
 Después de revisar la vista previa, la importación explícita se ejecuta con:
 
 ```powershell
@@ -151,4 +159,6 @@ Después de revisar la vista previa, la importación explícita se ejecuta con:
 
 La importación añade propiedad y actividad, pero no asigna puntuaciones ni
 reemplaza una propiedad manual. La disponibilidad histórica de juegos prestados
-por Steam Families se comprobará con la respuesta real de la cuenta.
+por Steam Families se comprobará con la respuesta real de la cuenta. El tiempo
+jugado tampoco se interpreta como una medida de gusto: una ausencia o pocas
+horas pueden deberse a que el juego se utilizó en otra plataforma.
