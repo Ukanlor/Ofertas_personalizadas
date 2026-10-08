@@ -41,6 +41,13 @@ class Game:
     variants: tuple[Variant, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class TasteCandidate:
+    game: Game
+    playtime_forever_minutes: int
+    remaining: int
+
+
 def clean_display_text(value: str, field_name: str) -> str:
     if not isinstance(value, str):
         raise DomainError(f"{field_name} debe ser texto.")

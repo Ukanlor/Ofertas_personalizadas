@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from ofertas.domain import Game, Variant
+from ofertas.domain import Game, TasteCandidate, Variant
 
 
 JsonObject = dict[str, Any]
@@ -62,6 +62,42 @@ def build_game_card(game: Game) -> GameCard:
     return GameCard(
         text="\n".join(lines),
         reply_markup={"inline_keyboard": keyboard},
+    )
+
+
+def build_taste_card(candidate: TasteCandidate) -> GameCard:
+    game = candidate.game
+    hours = candidate.playtime_forever_minutes / 60
+    keyboard = [
+        [
+            {
+                "text": str(score),
+                "callback_data": f"taste:{game.id}:{score}",
+            }
+            for score in range(start, start + 5)
+        ]
+        for start in (1, 6)
+    ]
+    return GameCard(
+        text=(
+            "Calibración de gusto\n\n"
+            f"{game.canonical_title}\n"
+            f"Tiempo en Steam: {hours:.1f} h (solo contexto)\n"
+            f"Juegos pendientes: {candidate.remaining}\n\n"
+            "¿Cuánto te gustó?"
+        ),
+        reply_markup={"inline_keyboard": keyboard},
+    )
+
+
+def build_taste_saved_card(game: Game) -> GameCard:
+    return GameCard(
+        text=(
+            "Gusto guardado\n\n"
+            f"{game.canonical_title}\n"
+            f"Gusto: {game.taste_score}/10"
+        ),
+        reply_markup={"inline_keyboard": []},
     )
 
 

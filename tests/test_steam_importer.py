@@ -146,6 +146,33 @@ class SteamLibraryImporterTests(unittest.TestCase):
         self.assertFalse(self.importer.include_app(50))
         self.assertEqual(self.importer.list_exclusions(), ())
 
+    def test_taste_candidates_are_ordered_by_playtime_and_skip_rated_games(self) -> None:
+        self.importer.import_library(
+            "76561198000000000",
+            [
+                SteamOwnedApp(1145360, "Hades", 600),
+                SteamOwnedApp(504230, "Celeste", 90),
+            ],
+        )
+
+        first = self.catalog.next_taste_candidate()
+
+        self.assertIsNotNone(first)
+        assert first is not None
+        self.assertEqual(first.game.canonical_title, "Hades")
+        self.assertEqual(first.playtime_forever_minutes, 600)
+        self.assertEqual(first.remaining, 2)
+
+        self.catalog.set_taste(first.game.id, 9)
+        second = self.catalog.next_taste_candidate()
+
+        self.assertIsNotNone(second)
+        assert second is not None
+        self.assertEqual(second.game.canonical_title, "Celeste")
+        self.assertEqual(second.remaining, 1)
+        self.catalog.set_taste(second.game.id, 8)
+        self.assertIsNone(self.catalog.next_taste_candidate())
+
 
 if __name__ == "__main__":
     unittest.main()

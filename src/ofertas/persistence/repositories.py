@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from ofertas.domain import ConflictError, Game, NotFoundError, Variant
+from ofertas.domain import ConflictError, Game, NotFoundError, TasteCandidate, Variant
 from ofertas.persistence.database import Database, utc_now
 
 
@@ -230,6 +230,39 @@ class SqliteGameRepository:
                 )
             ]
         return tuple(self.get_game(game_id) for game_id in ids)
+
+    def next_taste_candidate(self) -> TasteCandidate | None:
+        with self.database.connection() as connection:
+            row = connection.execute(
+                """
+                SELECT v.game_id, sa.playtime_forever_minutes
+                FROM steam_apps AS sa
+                JOIN variants AS v ON v.id = sa.variant_id
+                LEFT JOIN taste_scores AS t ON t.game_id = v.game_id
+                WHERE t.game_id IS NULL
+                ORDER BY sa.playtime_forever_minutes DESC,
+                         sa.app_id ASC
+                LIMIT 1
+                """
+            ).fetchone()
+            remaining = int(
+                connection.execute(
+                    """
+                    SELECT count(DISTINCT v.game_id)
+                    FROM steam_apps AS sa
+                    JOIN variants AS v ON v.id = sa.variant_id
+                    LEFT JOIN taste_scores AS t ON t.game_id = v.game_id
+                    WHERE t.game_id IS NULL
+                    """
+                ).fetchone()[0]
+            )
+        if row is None:
+            return None
+        return TasteCandidate(
+            game=self.get_game(int(row["game_id"])),
+            playtime_forever_minutes=int(row["playtime_forever_minutes"]),
+            remaining=remaining,
+        )
 
     def _require_game(self, game_id: int) -> None:
         with self.database.connection() as connection:

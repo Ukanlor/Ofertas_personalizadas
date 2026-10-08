@@ -9,15 +9,21 @@ from ofertas.domain import DomainError
 from ofertas.persistence.telegram_state import TelegramStateRepository
 from ofertas.services import CatalogService
 from ofertas.telegram.api import JsonObject, TelegramApi, TelegramApiError
-from ofertas.telegram.cards import build_game_card
+from ofertas.telegram.cards import (
+    build_game_card,
+    build_taste_card,
+    build_taste_saved_card,
+)
 
 
 HELP_TEXT = (
     "Ofertas personalizadas\n\n"
     "/search texto - buscar un juego y abrir su tarjeta\n"
+    "/taste - puntuar cuánto te gustaron juegos ya jugados\n"
     "/help - mostrar esta ayuda\n\n"
-    "En cada tarjeta puedes puntuar 1-10, ignorar, reactivar o marcar una "
-    "variante como poseída. Todavía no se consultan precios ni se envían ofertas."
+    "En las tarjetas de búsqueda, 1-10 representa interés de compra. "
+    "La calibración /taste guarda gusto por separado. También puedes ignorar, "
+    "reactivar o cambiar propiedad. Todavía no se consultan precios."
 )
 
 
@@ -67,6 +73,8 @@ class TelegramPreferenceBot:
             self.api.send_message(chat_id=chat_id, text=HELP_TEXT)
         elif command == "/search":
             self._send_search_results(chat_id, argument)
+        elif command == "/taste":
+            self._send_next_taste(chat_id)
         elif command.startswith("/"):
             self.api.send_message(
                 chat_id=chat_id,
@@ -93,6 +101,21 @@ class TelegramPreferenceBot:
                 chat_id=chat_id,
                 text="Hay más resultados; usa una búsqueda más específica.",
             )
+
+    def _send_next_taste(self, chat_id: int) -> None:
+        candidate = self.catalog.next_taste_candidate()
+        if candidate is None:
+            self.api.send_message(
+                chat_id=chat_id,
+                text="No quedan juegos de Steam pendientes de gusto.",
+            )
+            return
+        card = build_taste_card(candidate)
+        self.api.send_message(
+            chat_id=chat_id,
+            text=card.text,
+            reply_markup=card.reply_markup,
+        )
 
     def _process_callback(self, callback: JsonObject) -> None:
         callback_id = callback.get("id")
@@ -167,7 +190,11 @@ class TelegramPreferenceBot:
             return
 
         game = self.catalog.get_game(game_id)
-        card = build_game_card(game)
+        card = (
+            build_taste_saved_card(game)
+            if action.kind == "taste"
+            else build_game_card(game)
+        )
         try:
             self.api.edit_message_text(
                 chat_id=int(chat["id"]),
@@ -176,19 +203,25 @@ class TelegramPreferenceBot:
                 reply_markup=card.reply_markup,
             )
         except TelegramApiError:
+            recovery_command = "/taste" if action.kind == "taste" else "/search"
             self.api.answer_callback_query(
                 callback_query_id=callback_id,
-                text="Guardado; usa /search para actualizar la tarjeta.",
+                text=f"Guardado; usa {recovery_command} para continuar.",
                 show_alert=True,
             )
             return
         self.api.answer_callback_query(
             callback_query_id=callback_id, text="Cambio guardado."
         )
+        if action.kind == "taste":
+            self._send_next_taste(int(chat["id"]))
 
     def _apply_action(self, action: CallbackAction) -> int:
         if action.kind == "rate":
             self.catalog.set_interest(action.target_id, int(action.value))
+            return action.target_id
+        if action.kind == "taste":
+            self.catalog.set_taste(action.target_id, int(action.value))
             return action.target_id
         if action.kind == "ignore":
             self.catalog.ignore(action.target_id)
@@ -261,6 +294,12 @@ def parse_callback_data(data: str) -> CallbackAction:
             if not 1 <= score <= 10:
                 raise ValueError
             return CallbackAction("rate", game_id, score)
+        if len(parts) == 3 and parts[0] == "taste":
+            game_id = positive_int(parts[1])
+            score = int(parts[2])
+            if not 1 <= score <= 10:
+                raise ValueError
+            return CallbackAction("taste", game_id, score)
         if len(parts) == 2 and parts[0] in {"ignore", "reactivate"}:
             return CallbackAction(parts[0], positive_int(parts[1]))
         if len(parts) == 3 and parts[0] == "own" and parts[2] in {"set", "unset"}:

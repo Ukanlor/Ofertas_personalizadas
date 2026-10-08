@@ -4,8 +4,8 @@
 
 - Última capa cerrada: **3 - Steam personal**.
 - Capa activa: **4 - Recomendador v1**.
-- Estado: separación de gusto e interés de compra implementada; calibración y
-  recomendación todavía pendientes.
+- Estado: separación de gusto e interés de compra implementada; calibración por
+  Telegram lista para validación real y recomendación todavía pendiente.
 - Rama inspeccionada: `main`.
 - Punto de partida: commit inicial `e12c2b6`.
 - Punto de control funcional de capas 0-1: commit local `f5f4c51`.
@@ -196,8 +196,16 @@ seguridad locales están ignoradas por Git.
 - Se añadió la migración 006 para gusto explícito de 1 a 10, separado del interés
   de compra y del estado ignorado.
 - La CLI permite establecer o limpiar gusto e interés por separado. Las tarjetas
-  de Telegram muestran ambos valores; sus botones existentes siguen modificando
-  el interés de compra hasta implementar el flujo específico de calibración.
-- La suite completa suma 49 pruebas correctas.
-- Próximo paso: aplicar la migración 006, registrar Hades con gusto 9/10 y limpiar
-  su interés de compra. Después se construirá la calibración de juegos jugados.
+  de Telegram muestran ambos valores; sus botones de búsqueda modifican el
+  interés de compra.
+- El usuario aplicó la migración 006, registró Hades con gusto 9/10 y limpió su
+  interés de compra. La separación quedó validada en la base personal.
+- Se añadió `/taste`: presenta únicamente juegos importados desde Steam que aún
+  no tienen gusto, comenzando por el de mayor tiempo jugado. Las horas se muestran
+  solo como contexto y no determinan la puntuación.
+- Al elegir 1-10, el bot conserva una tarjeta de confirmación sin botones y envía
+  automáticamente el siguiente pendiente. El flujo puede interrumpirse y
+  reanudarse sin perder avances.
+- La suite completa suma 53 pruebas correctas.
+- Próximo paso: validar `/taste` con el bot real y reunir una primera muestra de
+  gustos antes de construir la recomendación explicable.

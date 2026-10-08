@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ofertas.domain import (
     Game,
+    TasteCandidate,
     Variant,
     clean_display_text,
     normalize_code,
@@ -72,3 +73,6 @@ class CatalogService:
 
     def search_games(self, query: str) -> tuple[Game, ...]:
         return self.repository.search_games(normalize_text(query))
+
+    def next_taste_candidate(self) -> TasteCandidate | None:
+        return self.repository.next_taste_candidate()

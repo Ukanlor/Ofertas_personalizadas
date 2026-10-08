@@ -5,8 +5,10 @@ from typing import Any
 
 from ofertas.persistence.database import Database
 from ofertas.persistence.repositories import SqliteGameRepository
+from ofertas.persistence.steam import SqliteSteamRepository
 from ofertas.persistence.telegram_state import TelegramStateRepository
 from ofertas.services import CatalogService
+from ofertas.steam.importer import SteamLibraryImporter, SteamOwnedApp
 from ofertas.telegram.api import JsonObject, TelegramApiError
 from ofertas.telegram.bot import TelegramPollingRunner, TelegramPreferenceBot
 
@@ -202,6 +204,71 @@ class TelegramPreferenceBotTests(unittest.TestCase):
 
         self.assertIsNone(self.catalog.get_game(self.game_id).interest_score)
         self.assertEqual(self.api.edited_messages, [])
+        self.assertTrue(self.api.callback_answers[-1]["show_alert"])
+
+    def test_taste_flow_saves_taste_and_sends_the_next_steam_game(self) -> None:
+        importer = SteamLibraryImporter(SqliteSteamRepository(self.database))
+        importer.import_library(
+            "76561198000000000",
+            [
+                SteamOwnedApp(1145360, "Hades", 600),
+                SteamOwnedApp(504230, "Celeste", 90),
+            ],
+        )
+
+        self.bot.process_update(self.message_update("/taste"))
+
+        first_card = self.api.sent_messages[-1]
+        self.assertIn("Hades", first_card["text"])
+        self.assertIn("10.0 h (solo contexto)", first_card["text"])
+        self.assertIn("Juegos pendientes: 2", first_card["text"])
+        callback_data = [
+            button["callback_data"]
+            for row in first_card["reply_markup"]["inline_keyboard"]
+            for button in row
+        ]
+        self.assertIn(f"taste:{self.game_id}:9", callback_data)
+
+        self.bot.process_update(
+            self.callback_update("callback-taste", f"taste:{self.game_id}:9")
+        )
+
+        hades = self.catalog.get_game(self.game_id)
+        self.assertEqual(hades.taste_score, 9)
+        self.assertIsNone(hades.interest_score)
+        self.assertIn("Gusto guardado", self.api.edited_messages[-1]["text"])
+        self.assertEqual(
+            self.api.edited_messages[-1]["reply_markup"],
+            {"inline_keyboard": []},
+        )
+        self.assertIn("Celeste", self.api.sent_messages[-1]["text"])
+        self.assertIn("Juegos pendientes: 1", self.api.sent_messages[-1]["text"])
+
+    def test_taste_reports_completion_when_no_steam_games_are_pending(self) -> None:
+        self.bot.process_update(self.message_update("/taste"))
+
+        self.assertEqual(
+            self.api.sent_messages[-1]["text"],
+            "No quedan juegos de Steam pendientes de gusto.",
+        )
+
+    def test_taste_edit_failure_keeps_score_and_points_back_to_taste(self) -> None:
+        importer = SteamLibraryImporter(SqliteSteamRepository(self.database))
+        importer.import_library(
+            "76561198000000000",
+            [SteamOwnedApp(1145360, "Hades", 600)],
+        )
+        self.api.fail_edits = True
+
+        self.bot.process_update(
+            self.callback_update("callback-taste-fails", f"taste:{self.game_id}:9")
+        )
+
+        self.assertEqual(self.catalog.get_game(self.game_id).taste_score, 9)
+        self.assertEqual(
+            self.api.callback_answers[-1]["text"],
+            "Guardado; usa /taste para continuar.",
+        )
         self.assertTrue(self.api.callback_answers[-1]["show_alert"])
 
     def test_runner_records_offset_only_after_processing(self) -> None:

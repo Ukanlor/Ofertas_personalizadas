@@ -113,11 +113,17 @@ $env:TELEGRAM_ALLOWED_USER_ID = "TU_ID_NUMERICO"
 ```
 
 El proceso funciona hasta presionar `Ctrl+C`. Actualmente reconoce `/start`,
-`/help` y `/search texto`; las tarjetas permiten puntuar, ignorar, reactivar y
-marcar o desmarcar propiedad por variante. En Windows, `Ctrl+C` puede tardar
-aproximadamente 30 segundos en devolver el control a PowerShell mientras termina
-la espera activa de long polling; se considera un comportamiento conocido y
-aceptable por ahora.
+`/help`, `/search texto` y `/taste`. Las tarjetas de búsqueda permiten puntuar
+interés de compra, ignorar, reactivar y marcar o desmarcar propiedad por
+variante. `/taste` inicia una calibración con los juegos importados desde Steam:
+muestra primero los de mayor tiempo registrado, guarda cuánto gustó cada juego y
+continúa automáticamente con el siguiente. Las horas solo determinan el orden y
+se muestran como contexto; no se convierten en una puntuación. La sesión puede
+interrumpirse y reanudarse más tarde ejecutando `/taste` de nuevo.
+
+En Windows, `Ctrl+C` puede tardar aproximadamente 30 segundos en devolver el
+control a PowerShell mientras termina la espera activa de long polling; se
+considera un comportamiento conocido y aceptable por ahora.
 
 ## Steam: configuración local
 
