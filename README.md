@@ -13,9 +13,10 @@ no forman parte del MVP.
 
 Las **capas 1 y 2** están completas y validadas: el núcleo de datos funciona de
 forma local y el bot de Telegram permite consultar y modificar las preferencias
-del usuario autorizado. La **capa 3** todavía no ha comenzado. No existen
-importación de Steam, consulta de precios ni alertas espontáneas. El estado
-verificable y el siguiente trabajo autorizado se mantienen en
+del usuario autorizado. La **capa 3: Steam personal** está en desarrollo; su
+esquema local ya está preparado, pero todavía no se conecta con una cuenta real.
+No existen consulta de precios ni alertas espontáneas. El estado verificable y
+el siguiente trabajo autorizado se mantienen en
 [`PROGRESS.md`](PROGRESS.md).
 
 ## Entornos previstos
@@ -113,3 +114,35 @@ marcar o desmarcar propiedad por variante. En Windows, `Ctrl+C` puede tardar
 aproximadamente 30 segundos en devolver el control a PowerShell mientras termina
 la espera activa de long polling; se considera un comportamiento conocido y
 aceptable por ahora.
+
+## Steam: configuración local
+
+La capa 3 usa `IPlayerService/GetOwnedGames` de la
+[Web API oficial de Steam](https://partner.steamgames.com/doc/webapi/iplayerservice?language=english).
+Solo importa títulos cuyo tiempo total sea mayor que cero. La clave y el SteamID
+se reciben por variables de entorno; la clave no se guarda en Git ni SQLite.
+
+En PowerShell, carga la clave sin escribirla en el historial:
+
+```powershell
+$steamKeySeguro = Read-Host "Clave Web API de Steam" -AsSecureString
+$env:STEAM_WEB_API_KEY = [System.Net.NetworkCredential]::new("", $steamKeySeguro).Password
+Remove-Variable steamKeySeguro
+$env:STEAM_USER_ID = "TU_STEAM_ID_NUMERICO"
+```
+
+Primero comprueba la conexión sin modificar el catálogo:
+
+```powershell
+.\scripts\ofertas.cmd steam check
+```
+
+Después de revisar las cantidades, la importación explícita se ejecuta con:
+
+```powershell
+.\scripts\ofertas.cmd steam import
+```
+
+La importación añade propiedad y actividad, pero no asigna puntuaciones ni
+reemplaza una propiedad manual. La disponibilidad histórica de juegos prestados
+por Steam Families se comprobará con la respuesta real de la cuenta.

@@ -3,9 +3,9 @@
 ## Estado actual
 
 - Última capa cerrada: **2 - Telegram de preferencias**.
-- Próxima capa: **3**, todavía no iniciada.
-- Estado: implementación, pruebas automáticas e integración manual real de la
-  capa 2 completas.
+- Capa activa: **3 - Steam personal**.
+- Estado: alcance inicial definido y migración local implementada; todavía no
+  hay conexión con la cuenta de Steam.
 - Rama inspeccionada: `main`.
 - Punto de partida: commit inicial `e12c2b6`.
 - Punto de control funcional de capas 0-1: commit local `f5f4c51`.
@@ -22,6 +22,11 @@
 - Propiedad por variante, no bloqueo global implícito entre plataformas.
 - La capa 10 se ocupará de operación continua en Windows 11; no de migrar desde
   Linux.
+- La importación de Steam incluirá únicamente títulos con tiempo jugado total
+  mayor que cero, incluidos juegos gratuitos ejecutados. Los títulos disponibles
+  por Steam Families pero nunca abiertos deben quedar fuera.
+- Steam aportará propiedad y actividad; nunca asignará una puntuación ni
+  reemplazará una preferencia o decisión manual.
 
 ## Trabajo realizado en la capa 0
 
@@ -123,8 +128,36 @@ de precios, tareas programadas ni otras integraciones. El bot de Telegram ya
 existe y fue validado, pero su token y el ID autorizado no se guardan en Git ni
 en la base de datos. Las bases locales están ignoradas por Git.
 
-## Siguiente tarea propuesta
+## Inicio de la capa 3
 
-Conservar el cierre validado de la capa 2. Antes de implementar la capa 3, se
-debe revisar su alcance y resolver las decisiones pendientes relacionadas con
-Steam. No iniciar esa capa sin la siguiente autorización explícita del usuario.
+- Se confirmó el filtro principal con el usuario: `playtime_forever > 0`.
+- El usuario dejó públicos los detalles de juegos y visible el tiempo total en
+  la configuración de privacidad de Steam.
+- La API oficial ofrece biblioteca, nombre y tiempo jugado mediante
+  `IPlayerService/GetOwnedGames`, siempre que los detalles de juegos sean
+  visibles, y permite incluir juegos gratuitos jugados.
+- La documentación oficial no garantiza que la respuesta contenga todo el
+  historial prestado mediante Steam Families; se verificará con datos reales.
+- Se añadió la migración 004 con una identidad de perfil local y aplicaciones de
+  Steam vinculadas a variantes. Guarda actividad total y reciente, exige más de
+  cero minutos y no contiene una columna para credenciales.
+- La actualización desde las migraciones anteriores conserva el catálogo y las
+  preferencias. La suite completa suma 30 pruebas correctas.
+- El usuario aplicó la migración 004 a la base local real y confirmó que Hades
+  conserva su puntuación y sus variantes.
+- Se implementó un importador local transaccional con respuestas simuladas:
+  reutiliza coincidencias exactas de título o alias, crea juegos y variantes
+  Steam cuando corresponde y omite todo título con cero minutos.
+- La propiedad manual tiene precedencia: una coincidencia importada no cambia su
+  origen. Reimportar actualiza la actividad sin duplicar catálogo y tratar de
+  vincular otra cuenta revierte toda la operación.
+- Se implementó un cliente HTTPS para `GetOwnedGames` que solicita nombres,
+  actividad y juegos gratuitos jugados. Valida la estructura de la respuesta y
+  no incluye la clave en sus errores.
+- Se añadieron `steam check`, que solo presenta cantidades, y `steam import`, que
+  ejecuta la escritura explícita después de revisar la conexión.
+- `STEAM_WEB_API_KEY` y `STEAM_USER_ID` se leen únicamente desde el entorno. El
+  archivo de ejemplo contiene valores ficticios.
+- La suite completa suma 44 pruebas correctas.
+- Próximo paso: obtener una clave Web API y el SteamID, cargarlos localmente y
+  ejecutar `steam check`. No compartir ninguno de esos valores en el chat.

@@ -29,7 +29,7 @@ class MigrationTests(unittest.TestCase):
                 (now, now),
             )
 
-        self.assertEqual(self.database.migrate(), (2, 3))
+        self.assertEqual(self.database.migrate(), (2, 3, 4))
 
         with self.database.connection() as connection:
             title = connection.execute(
@@ -69,6 +69,76 @@ class MigrationTests(unittest.TestCase):
                 "SELECT 1 FROM games WHERE id = 99"
             ).fetchone()
         self.assertIsNone(game)
+
+    def test_steam_migration_preserves_catalog_and_rejects_unplayed_apps(self) -> None:
+        self.assertEqual(self.database.migrate(target_version=3), (1, 2, 3))
+        now = utc_now()
+        with self.database.transaction() as connection:
+            game_id = connection.execute(
+                """
+                INSERT INTO games(
+                    canonical_title, normalized_title, created_at, updated_at
+                ) VALUES ('Hades', 'hades', ?, ?)
+                """,
+                (now, now),
+            ).lastrowid
+            variant_id = connection.execute(
+                """
+                INSERT INTO variants(
+                    game_id, platform, edition, format, region, drm, condition,
+                    created_at, updated_at
+                ) VALUES (?, 'pc', 'base', 'digital', '', 'steam', '', ?, ?)
+                """,
+                (game_id, now, now),
+            ).lastrowid
+
+        self.assertEqual(self.database.migrate(), (4,))
+
+        with self.database.transaction() as connection:
+            connection.execute(
+                """
+                INSERT INTO steam_profile(
+                    singleton, steam_id, created_at, updated_at
+                ) VALUES (1, '76561198000000000', ?, ?)
+                """,
+                (now, now),
+            )
+            connection.execute(
+                """
+                INSERT INTO steam_apps(
+                    app_id, variant_id, name, playtime_forever_minutes,
+                    playtime_recent_minutes, last_played_at,
+                    first_seen_at, last_seen_at
+                ) VALUES (1145360, ?, 'Hades', 120, 30, NULL, ?, ?)
+                """,
+                (variant_id, now, now),
+            )
+
+        with self.database.connection() as connection:
+            stored = connection.execute(
+                """
+                SELECT name, playtime_forever_minutes
+                FROM steam_apps WHERE app_id = 1145360
+                """
+            ).fetchone()
+        self.assertEqual(stored["name"], "Hades")
+        self.assertEqual(stored["playtime_forever_minutes"], 120)
+
+        with self.database.transaction() as connection:
+            connection.execute("DELETE FROM steam_apps WHERE app_id = 1145360")
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            with self.database.transaction() as connection:
+                connection.execute(
+                    """
+                    INSERT INTO steam_apps(
+                        app_id, variant_id, name, playtime_forever_minutes,
+                        playtime_recent_minutes, last_played_at,
+                        first_seen_at, last_seen_at
+                    ) VALUES (999, ?, 'Nunca abierto', 0, 0, NULL, ?, ?)
+                    """,
+                    (variant_id, now, now),
+                )
 
 
 if __name__ == "__main__":

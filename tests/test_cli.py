@@ -3,8 +3,12 @@ from io import StringIO
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from ofertas.cli import main
+from ofertas.persistence.database import Database
+from ofertas.steam.config import SteamConfig
+from ofertas.steam.importer import SteamOwnedApp
 
 
 class CliTests(unittest.TestCase):
@@ -87,6 +91,54 @@ class CliTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(error, "")
         self.assertIn("Juego ignorado", output)
+
+    @patch("ofertas.cli.HttpSteamApi")
+    @patch("ofertas.cli.SteamConfig.from_environment")
+    def test_steam_check_does_not_write_games(
+        self, mocked_config: object, mocked_api_class: object
+    ) -> None:
+        mocked_config.return_value = SteamConfig(  # type: ignore[attr-defined]
+            api_key="fictitious-key", steam_id="76561198000000000"
+        )
+        mocked_api_class.return_value.get_owned_games.return_value = [  # type: ignore[attr-defined]
+            SteamOwnedApp(10, "Jugado", 60),
+            SteamOwnedApp(11, "Sin abrir", 0),
+        ]
+
+        exit_code, output, error = self.run_cli("steam", "check")
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(error, "")
+        self.assertIn("jugados alguna vez: 1", output)
+        self.assertIn("omitidos sin uso: 1", output)
+        with Database(self.db_path).connection() as connection:
+            count = connection.execute("SELECT count(*) FROM games").fetchone()[0]
+        self.assertEqual(count, 0)
+
+    @patch("ofertas.cli.HttpSteamApi")
+    @patch("ofertas.cli.SteamConfig.from_environment")
+    def test_steam_import_writes_only_played_games(
+        self, mocked_config: object, mocked_api_class: object
+    ) -> None:
+        mocked_config.return_value = SteamConfig(  # type: ignore[attr-defined]
+            api_key="fictitious-key", steam_id="76561198000000000"
+        )
+        mocked_api_class.return_value.get_owned_games.return_value = [  # type: ignore[attr-defined]
+            SteamOwnedApp(10, "Jugado", 60),
+            SteamOwnedApp(11, "Sin abrir", 0),
+        ]
+
+        exit_code, output, error = self.run_cli("steam", "import")
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(error, "")
+        self.assertIn("importados: 1", output)
+        self.assertIn("omitidos sin uso: 1", output)
+        with Database(self.db_path).connection() as connection:
+            games = connection.execute(
+                "SELECT canonical_title FROM games"
+            ).fetchall()
+        self.assertEqual([row["canonical_title"] for row in games], ["Jugado"])
 
 
 if __name__ == "__main__":

@@ -8,8 +8,12 @@ from collections.abc import Sequence
 from ofertas.domain import DomainError, Game
 from ofertas.persistence.database import Database
 from ofertas.persistence.repositories import SqliteGameRepository
+from ofertas.persistence.steam import SqliteSteamRepository
 from ofertas.persistence.telegram_state import TelegramStateRepository
 from ofertas.services import CatalogService
+from ofertas.steam.api import HttpSteamApi, SteamApiError
+from ofertas.steam.config import SteamConfig
+from ofertas.steam.importer import SteamLibraryImporter
 from ofertas.telegram.api import HttpTelegramApi, TelegramApiError
 from ofertas.telegram.bot import TelegramPollingRunner, TelegramPreferenceBot
 from ofertas.telegram.config import TelegramConfig, token_from_environment
@@ -92,6 +96,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     bot_commands.add_parser("run", help="Iniciar long polling hasta presionar Ctrl+C.")
 
+    steam_parser = commands.add_parser("steam", help="Importar actividad de Steam.")
+    steam_commands = steam_parser.add_subparsers(
+        dest="steam_command", required=True
+    )
+    steam_commands.add_parser(
+        "check", help="Comprobar acceso y mostrar cantidades sin importar."
+    )
+    steam_commands.add_parser(
+        "import", help="Importar juegos ejecutados y su actividad."
+    )
+
     return parser
 
 
@@ -113,6 +128,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         service = CatalogService(SqliteGameRepository(database))
         if args.command == "bot":
             return run_bot_command(args, database, service)
+        if args.command == "steam":
+            return run_steam_command(args, database)
         return run_command(args, service)
     except DomainError as error:
         print(f"Error: {error}", file=sys.stderr)
@@ -120,6 +137,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     except TelegramApiError as error:
         print(f"Error de Telegram: {error}", file=sys.stderr)
         return 3
+    except SteamApiError as error:
+        print(f"Error de Steam: {error}", file=sys.stderr)
+        return 4
 
 
 def run_command(args: argparse.Namespace, service: CatalogService) -> int:
@@ -214,6 +234,35 @@ def run_bot_command(
         return 0
 
     raise AssertionError("Comando de bot no implementado.")
+
+
+def run_steam_command(args: argparse.Namespace, database: Database) -> int:
+    config = SteamConfig.from_environment()
+    api = HttpSteamApi(config.api_key)
+    apps = api.get_owned_games(config.steam_id)
+    played = sum(app.playtime_forever_minutes > 0 for app in apps)
+    unplayed = len(apps) - played
+
+    if args.steam_command == "check":
+        print(
+            "Acceso válido. "
+            f"Biblioteca recibida: {len(apps)}; "
+            f"jugados alguna vez: {played}; omitidos sin uso: {unplayed}."
+        )
+        return 0
+
+    if args.steam_command == "import":
+        importer = SteamLibraryImporter(SqliteSteamRepository(database))
+        result = importer.import_library(config.steam_id, apps)
+        print(
+            "Importación completada. "
+            f"Recibidos: {result.received}; importados: {result.imported}; "
+            f"omitidos sin uso: {result.skipped_unplayed}; "
+            f"juegos nuevos: {result.created_games}."
+        )
+        return 0
+
+    raise AssertionError("Comando de Steam no implementado.")
 
 
 def identities_from_updates(updates: list[dict[str, object]]) -> list[tuple[int, str]]:

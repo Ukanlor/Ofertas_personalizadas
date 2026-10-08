@@ -162,7 +162,10 @@ indicada explícitamente y la capa no se presentará como completamente validada
 
 ## 10. Decisiones pendientes por etapa
 
-- Capa 3: cuenta, visibilidad de Steam, juegos gratuitos y apps no clasificadas.
+- Capa 3: importar únicamente títulos con tiempo jugado mayor que cero, incluidos
+  los gratuitos jugados. Quedan por verificar la visibilidad de la cuenta, el
+  alcance real de Steam Families y el tratamiento de aplicaciones que Steam no
+  permita clasificar con seguridad.
 - Capa 4: diferencia práctica entre gusto e interés de compra; fuente de metadata
   y catálogo candidato.
 - Capa 5: histórico mínimo, frescura y fórmula de calidad de oferta.
