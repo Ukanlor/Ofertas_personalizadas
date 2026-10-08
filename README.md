@@ -11,11 +11,12 @@ no forman parte del MVP.
 
 ## Estado actual
 
-La **capa 1: núcleo de datos** está completa y validada. La **capa 2: Telegram
-de preferencias** tiene su implementación offline terminada; falta conectarla y
-validarla con el bot real del usuario. No existen importación de Steam, consulta
-de precios ni alertas espontáneas. El estado verificable y el siguiente trabajo
-autorizado se mantienen en [`PROGRESS.md`](PROGRESS.md).
+Las **capas 1 y 2** están completas y validadas: el núcleo de datos funciona de
+forma local y el bot de Telegram permite consultar y modificar las preferencias
+del usuario autorizado. La **capa 3** todavía no ha comenzado. No existen
+importación de Steam, consulta de precios ni alertas espontáneas. El estado
+verificable y el siguiente trabajo autorizado se mantienen en
+[`PROGRESS.md`](PROGRESS.md).
 
 ## Entornos previstos
 
@@ -108,4 +109,7 @@ $env:TELEGRAM_ALLOWED_USER_ID = "TU_ID_NUMERICO"
 
 El proceso funciona hasta presionar `Ctrl+C`. Actualmente reconoce `/start`,
 `/help` y `/search texto`; las tarjetas permiten puntuar, ignorar, reactivar y
-marcar o desmarcar propiedad por variante.
+marcar o desmarcar propiedad por variante. En Windows, `Ctrl+C` puede tardar
+aproximadamente 30 segundos en devolver el control a PowerShell mientras termina
+la espera activa de long polling; se considera un comportamiento conocido y
+aceptable por ahora.

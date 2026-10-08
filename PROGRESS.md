@@ -2,14 +2,14 @@
 
 ## Estado actual
 
-- Última capa cerrada: **1 - Núcleo de datos**.
-- Capa activa: **2 - Telegram de preferencias**.
-- Estado: implementación y pruebas offline completas; integración real y
-  validación manual pendientes.
+- Última capa cerrada: **2 - Telegram de preferencias**.
+- Próxima capa: **3**, todavía no iniciada.
+- Estado: implementación, pruebas automáticas e integración manual real de la
+  capa 2 completas.
 - Rama inspeccionada: `main`.
 - Punto de partida: commit inicial `e12c2b6`.
 - Punto de control funcional de capas 0-1: commit local `f5f4c51`.
-- Código de producto: núcleo local y CLI disponibles; sin integraciones externas.
+- Código de producto: núcleo local, CLI y bot de Telegram disponibles.
 
 ## Decisiones registradas
 
@@ -90,10 +90,10 @@
 - Si el guardado funciona y la edición del mensaje falla, el dato se conserva y
   el usuario recibe una indicación para volver a buscar.
 - Se añadieron `bot check`, `bot identify` y `bot run` a la CLI.
-- Token e ID autorizado se reciben por variables de entorno. No se ha guardado
-  ninguna credencial ni se ha contactado Telegram.
+- Token e ID autorizado se reciben por variables de entorno. Las credenciales
+  permanecieron únicamente en el entorno local y no se guardaron en el proyecto.
 
-### Verificación de capa 2 hasta ahora
+### Verificación de capa 2
 
 - `python -m compileall -q src tests`: correcto.
 - `python -m unittest discover -s tests -v`: 29 pruebas correctas.
@@ -102,18 +102,29 @@
   respuestas HTTP de Telegram simuladas.
 - La migración 003 se aplicó sobre la base local real; Hades conservó interés 8,
   Steam poseído y Switch no poseído.
-- Integración real con Telegram: pendiente.
+- El usuario validó el token con `bot check`, identificó su cuenta con
+  `bot identify` y ejecutó el bot real restringido a su ID, sin compartir ni
+  persistir esas credenciales en el repositorio.
+- `/start` y `/search Hades` respondieron correctamente en Telegram y mostraron
+  interés 8/10, Steam poseído y Switch no poseído.
+- Los botones se validaron de extremo a extremo: puntuación 9, ignorar,
+  reactivar a sin puntuar, marcar y desmarcar propiedad únicamente en la variante
+  de Switch, y restaurar el interés a 8.
+- Después de detener y reiniciar el proceso, una nueva búsqueda conservó el
+  interés y la propiedad esperados.
+- En PowerShell, `Ctrl+C` puede tardar aproximadamente 30 segundos en detener el
+  proceso mientras finaliza la espera de long polling. El usuario lo registró
+  como observación y se acepta por ahora sin modificar el intervalo.
 
 ## Límites actuales
 
-No se han creado dependencias externas, bot, tokens, importaciones de Steam,
-fuentes de precios, tareas programadas ni conexiones a servicios externos. Las
-bases usadas por las pruebas y la demostración son locales e ignoradas por Git.
+No se han creado dependencias de Python externas, importaciones de Steam, fuentes
+de precios, tareas programadas ni otras integraciones. El bot de Telegram ya
+existe y fue validado, pero su token y el ID autorizado no se guardan en Git ni
+en la base de datos. Las bases locales están ignoradas por Git.
 
 ## Siguiente tarea propuesta
 
-El usuario crea un bot con `@BotFather`, carga el token solo en su PowerShell y
-ejecuta `bot check`. Después envía `/start`, obtiene su ID mediante `bot identify`
-y configura `TELEGRAM_ALLOWED_USER_ID`. No compartir el token en el chat. La
-capa no se cierra hasta probar búsqueda, puntuación, ignorar/reactivar, propiedad
-y persistencia tras reiniciar el proceso real.
+Conservar el cierre validado de la capa 2. Antes de implementar la capa 3, se
+debe revisar su alcance y resolver las decisiones pendientes relacionadas con
+Steam. No iniciar esa capa sin la siguiente autorización explícita del usuario.
