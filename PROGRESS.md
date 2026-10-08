@@ -7,6 +7,7 @@
 - Próxima capa planificada: **2 - Telegram de preferencias**, no iniciada.
 - Rama inspeccionada: `main`.
 - Punto de partida: commit inicial `e12c2b6`.
+- Punto de control funcional de capas 0-1: commit local `f5f4c51`.
 - Código de producto: núcleo local y CLI disponibles; sin integraciones externas.
 
 ## Decisiones registradas
